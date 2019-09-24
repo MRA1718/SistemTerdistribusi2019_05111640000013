@@ -1,2 +1,2 @@
-Nama : Muhammad Raihan A.
+Nama : Muhammad Raihan A.\n
 NRP : 05111640000013
