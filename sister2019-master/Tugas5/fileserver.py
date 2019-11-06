@@ -3,77 +3,89 @@ import base64
 
 class FileServer(object):
     def __init__(self):
-        pass
+        self.pyro_server = ["fileserver1", "fileserver2", "fileserver3"]
+        self.pyro = dict()
 
-    def create_return_message(self,kode='000',message='kosong',data=None):
-        return dict(kode=kode,message=message,data=data)
+    def pyro_connect(self):
+        i = 0
+        for list in self.pyro_server:
+            uri = "PYRONAME:{}@localhost:7777".format(list)
+            self.pyro[i] = Pyro4.Proxy(uri)
+            i += 1
 
-    def list(self):
-        print("list ops")
-        try:
-            daftarfile = []
-            for x in os.listdir():
-                if x[0:4]=='FFF-':
-                    daftarfile.append(x[4:])
-            return self.create_return_message('200',daftarfile)
-        except:
-            return self.create_return_message('500','Error')
+    def ls(self):
+        files = []
+        path = os.getcwd()
+        print
+        path
+        for r, d, f in os.walk(path):
+            for file in f:
+                if '.txt' in file:
+                    files.append(file)
 
-    def create(self, name='filename000'):
-        nama='FFF-{}' . format(name)
-        print("create ops {}" . format(nama))
-        try:
-            if os.path.exists(name):
-                return self.create_return_message('102', 'OK','File Exists')
-            f = open(nama,'wb',buffering=0)
+        return files
+
+    def create(self, name='filename000', data_cmd=None):
+        for x in range(0, len(self.pyro)):
+            self.pyro[x].create(name, data_cmd)
+
+        path = os.getcwd()
+        name = name
+        filename = os.path.join(path, name)
+        f = open(filename, "w+")
+        f.write(isi)
+        f.close()
+        return "[ filename : {}, content : {} ]".format(name, data_cmd)
+
+    def read(self, name='filename000'):
+        path = os.getcwd()
+        filename = os.path.join(path, name)
+        if (os.path.exists(filename)):
+            fd = os.open(filename, os.O_RDWR)
+            ret = os.read(fd, 16 * 1024)
+            print
+            ret
+            os.close(fd)
+            return ret
+        else:
+            return "file not found!"
+
+    def update(self, name='filename000', content=''):
+        for x in range(0, len(self.pyro)):
+            self.pyro[x].update(name, content)
+
+        path = os.getcwd()
+        name = name
+        filename = os.path.join(path, name)
+        if (os.path.exists(filename)):
+            f = open(filename, "w+")
+            f.write(content)
             f.close()
-            return self.create_return_message('100','OK')
-        except:
-            return self.create_return_message('500','Error')
-    def read(self,name='filename000'):
-        nama='FFF-{}' . format(name)
-        print("read ops {}" . format(nama))
-        try:
-            f = open(nama,'r+b')
-            contents = f.read().decode()
-            f.close()
-            return self.create_return_message('101','OK',contents)
-        except:
-            return self.create_return_message('500','Error')
-    def update(self,name='filename000',content=''):
-        nama='FFF-{}' . format(name)
-        print("update ops {}" . format(nama))
+            return "[ filename : {}, content : {} ]".format(name, content)
+        else:
+            return "file not found!"
 
-        if (str(type(content))=="<class 'dict'>"):
-            content = content['data']
-        try:
-            f = open(nama,'w+b')
-            f.write(content.encode())
-            f.close()
-            return self.create_return_message('101','OK')
-        except Exception as e:
-            return self.create_return_message('500','Error',str(e))
+    def delete(self, name='filename000'):
 
-    def delete(self,name='filename000'):
-        nama='FFF-{}' . format(name)
-        print("delete ops {}" . format(nama))
+        flag = 0
 
-        try:
-            os.remove(nama)
-            return self.create_return_message('101','OK')
-        except:
-            return self.create_return_message('500','Error')
+        for x in range(0, len(self.pyro)):
+            flag += 1
+            self.pyro[x].delete(name)
 
+        if (flag == len(self.pyro)):
+            path = os.getcwd()
+            filename = os.path.join(path, name)
+            if (os.path.exists(filename)):
+                os.remove(filename)
+                return ("successfully deleted")
+            else:
+                print
+                "file not found!"
+        else:
+            return "Error"
 
 
 if __name__ == '__main__':
     k = FileServer()
-    print(k.create('f1'))
-    print(k.update('f1',content='wedusku'))
-    print(k.read('f1'))
-#    print(k.create('f2'))
-#    print(k.update('f2',content='wedusmu'))
-#    print(k.read('f2'))
-    print(k.list())
-    #print(k.delete('f1'))
 
